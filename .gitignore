@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SfM Generated Files
+# Large data files - don't commit
+*.npz
+*.pkl
+*.ply
+*.txt
+*.png
+*.jpg
+*.jpeg
+
+# Keep only source code and README
+!README.md
+
+# Images folder (can be large)
+images/
+
+# Virtual environment
+venv/
