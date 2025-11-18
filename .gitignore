@@ -37,6 +37,7 @@ Thumbs.db
 
 # Images folder (can be large)
 images/
+heads/
 
 # Virtual environment
 venv/
