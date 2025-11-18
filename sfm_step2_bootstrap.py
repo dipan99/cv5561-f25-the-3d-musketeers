@@ -210,13 +210,19 @@ def visualize_3d_points(points_3d, save_path=None):
 
 
 def main():
-    # Configuration
-    seed_pair = (3, 4)  # The best matching pair from step 1
-    
-    print(f"[main] Bootstrapping 3D reconstruction with seed pair {seed_pair}")
+    # Configuration - Load available pairs first
+    print(f"[main] Bootstrapping 3D reconstruction...")
     
     # Load Step 1 results
     image_paths, keypoints, descriptors, pair_matches = load_step1_data()
+    
+    # Dynamically select the best matching pair (first available)
+    if not pair_matches:
+        raise ValueError("No matching pairs found in Step 1 results!")
+    
+    # Select pair with most matches
+    seed_pair = max(pair_matches.keys(), key=lambda k: len(pair_matches[k]))
+    print(f"[main] Selected seed pair {seed_pair} with {len(pair_matches[seed_pair])} matches")
     
     # Check if seed pair exists in matches
     if seed_pair not in pair_matches:
