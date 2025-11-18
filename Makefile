@@ -1,4 +1,4 @@
-.PHONY: all clean features bootstrap pose_triangulation reconstruction incremental visualize dense help run
+.PHONY: all clean features bootstrap pose_triangulation reconstruction incremental visualize dense analyze help run
 
 # Python interpreter
 PYTHON := python3
@@ -10,6 +10,7 @@ RECONSTRUCTION := reconstruction_initial.npz
 POINT_CLOUD := point_cloud_initial.txt
 FINAL_POINT_CLOUD := point_cloud_final.txt
 DENSE := dense_reconstruction.npz
+ANALYSIS := point_cloud_cleaned.txt
 
 # Default target
 all: run
@@ -28,12 +29,13 @@ help:
 	@echo "  make incremental  - Step 5: Incremental reconstruction"
 	@echo "  make visualize    - Step 6: Visualize point cloud"
 	@echo "  make dense        - Step 7: Dense reconstruction"
+	@echo "  make analyze      - Step 8: Analyze and visualize point cloud"
 	@echo "  make clean        - Remove all generated files"
 	@echo "  make help         - Show this help message"
 	@echo ""
 
 # Run complete pipeline
-run: dense
+run: analyze
 	@echo ""
 	@echo "========================================"
 	@echo "SfM Pipeline Complete!"
@@ -96,9 +98,18 @@ dense: $(DENSE)
 
 $(DENSE): $(FINAL_POINT_CLOUD)
 	@echo ""
-	@echo "[Step 7/7] Running dense reconstruction..."
+	@echo "[Step 7/8] Running dense reconstruction..."
 	$(PYTHON) sfm_step7_dense_reconstruction.py
 	@echo "✓ Step 7 complete"
+
+# Step 8: Point cloud analysis
+analyze: $(ANALYSIS)
+
+$(ANALYSIS): $(DENSE)
+	@echo ""
+	@echo "[Step 8/8] Analyzing point cloud..."
+	$(PYTHON) sfm_step8_point_cloud_analysis.py
+	@echo "✓ Step 8 complete"
 
 # Clean up generated files
 clean:

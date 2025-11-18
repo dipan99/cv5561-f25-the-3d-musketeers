@@ -9,8 +9,12 @@ def load_step1_data(npz_path="./step1_features.npz"):
     data = np.load(npz_path, allow_pickle=True)
     
     image_paths = data['image_paths']
-    keypoints = data['keypoints']
-    descriptors = data['descriptors']
+    
+    # Load keypoints and descriptors (stored separately as keypoints_0, descriptors_0, etc.)
+    num_images = int(data['num_images'])
+    keypoints = [data[f'keypoints_{i}'] for i in range(num_images)]
+    descriptors = [data[f'descriptors_{i}'] for i in range(num_images)]
+    
     pair_matches_raw = data['pair_matches'].item()
     
     # Convert pair_matches back to usable format

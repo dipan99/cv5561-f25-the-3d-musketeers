@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/chestonopsasnick/Documents/school/5561/cv5561-f25-the-3d-musketeers/colmap_visualize.py", line 13, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'

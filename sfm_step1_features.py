@@ -3,23 +3,56 @@ import glob
 import cv2
 import numpy as np
 
+# ============ CONFIGURATION ============
+MATCH_ALL_PAIRS = False  # True: match all pairs, False: consecutive pairs only
+MATCH_THRESHOLD = 50    # Minimum matches to keep a pair (only for all-pairs mode)
+SKIP_EVERY_N = 10       # Load every Nth image (2 = every other, 10 = every 10th, etc.)
+MAX_IMAGES = 50         # Maximum number of images to load (None = load all)
+# =======================================
 
-def load_images(image_dir, exts=(".jpg", ".jpeg", ".png")):
+def load_images(image_dir, exts=(".jpg", ".jpeg", ".png"), skip_every_n=1, max_images=None):
+    """
+    Load images from directory, optionally skipping images.
+    
+    Args:
+        image_dir: Path to directory containing images
+        exts: Tuple of valid image extensions
+        skip_every_n: Load every Nth image (2 = every other, 3 = every third, etc.)
+        max_images: Maximum number of images to load (None = load all)
+    
+    Returns:
+        image_paths: List of image file paths
+        images: List of loaded images (BGR format)
+    """
     image_paths = []
     for ext in exts:
         image_paths.extend(glob.glob(os.path.join(image_dir, f"*{ext}")))
     image_paths = sorted(image_paths)
+    
+    # Skip images if requested
+    if skip_every_n > 1:
+        image_paths = image_paths[::skip_every_n]
+        print(f"[load] Loading every {skip_every_n}th image")
+    
+    # Limit number of images if requested
+    if max_images is not None and len(image_paths) > max_images:
+        image_paths = image_paths[:max_images]
+        print(f"[load] Limited to first {max_images} images")
+    
+    print(f"[load] Loading {len(image_paths)} images from {image_dir}")
+    
     if len(image_paths) < 2:
         raise ValueError(f"Need at least 2 images, found {len(image_paths)} in {image_dir}")
+    
     images = [cv2.imread(p) for p in image_paths]
     for i, img in enumerate(images):
         if img is None:
             raise ValueError(f"Failed to load image: {image_paths[i]}")
     return image_paths, images
 
-
 def to_gray(images):
     gray_images = []
+
     for img in images:
         if len(img.shape) == 3:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -30,9 +63,9 @@ def to_gray(images):
 
 
 def create_feature_detector():
-    # You can switch to SIFT if available:
-    # return cv2.SIFT_create()
-    return cv2.ORB_create(nfeatures=4000)
+    # Limit features to avoid OpenCV matcher overflow
+    return cv2.SIFT_create(nfeatures=10000)
+    # return cv2.ORB_create(nfeatures=4000)
 
 
 def detect_and_describe(detector, gray_images):
@@ -41,7 +74,11 @@ def detect_and_describe(detector, gray_images):
     for idx, img in enumerate(gray_images):
         kps, des = detector.detectAndCompute(img, None)
         if des is None or len(kps) == 0:
-            raise RuntimeError(f"No features found in image index {idx}")
+            print(f"[detect] WARNING: No features found in image index {idx}, skipping...")
+            # Create empty keypoints/descriptors to maintain index alignment
+            keypoints_list.append([])
+            descriptors_list.append(np.array([]).reshape(0, 128))  # Empty SIFT descriptor array
+            continue
         keypoints_list.append(kps)
         descriptors_list.append(des)
         print(f"[detect] Image {idx}: {len(kps)} keypoints")
@@ -49,8 +86,8 @@ def detect_and_describe(detector, gray_images):
 
 
 def match_descriptors(des1, des2, ratio=0.75):
-    # For ORB (binary descriptors) use Hamming
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+    # For SIFT/SURF (float descriptors) use L2 norm
+    bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=False)
     knn_matches = bf.knnMatch(des1, des2, k=2)
     good = []
     for m, n in knn_matches:
@@ -60,15 +97,68 @@ def match_descriptors(des1, des2, ratio=0.75):
 
 
 def match_all_pairs(descriptors_list):
+    """
+    Match image pairs based on MATCH_ALL_PAIRS configuration.
+    
+    Args:
+        descriptors_list: List of descriptors for each image
+    
+    Returns:
+        Dictionary of (i, j) -> list of cv2.DMatch
+    """
     num_images = len(descriptors_list)
     pair_matches = {}  # (i, j) -> list of cv2.DMatch
-    for i in range(num_images - 1):
-        j = i + 1
-        des1 = descriptors_list[i]
-        des2 = descriptors_list[j]
-        good_matches = match_descriptors(des1, des2)
-        pair_matches[(i, j)] = good_matches
-        print(f"[match] Pair ({i}, {j}): {len(good_matches)} good matches")
+    
+    if MATCH_ALL_PAIRS:
+        # Match all possible pairs
+        print(f"[match] Matching all {num_images * (num_images - 1) // 2} image pairs...")
+        
+        total_pairs = 0
+        kept_pairs = 0
+        
+        for i in range(num_images):
+            for j in range(i + 1, num_images):
+                des1 = descriptors_list[i]
+                des2 = descriptors_list[j]
+                
+                # Skip if either image has no features
+                if len(des1) == 0 or len(des2) == 0:
+                    print(f"[match] Pair ({i}, {j}): skipped (no features)")
+                    total_pairs += 1
+                    continue
+                
+                good_matches = match_descriptors(des1, des2)
+                
+                # Only keep pairs with enough matches
+                if len(good_matches) >= MATCH_THRESHOLD:
+                    pair_matches[(i, j)] = good_matches
+                    kept_pairs += 1
+                    print(f"[match] Pair ({i}, {j}): {len(good_matches)} good matches ✓")
+                else:
+                    print(f"[match] Pair ({i}, {j}): {len(good_matches)} matches (skipped, < {MATCH_THRESHOLD})")
+                
+                total_pairs += 1
+        
+        print(f"\n[match] Summary: Kept {kept_pairs}/{total_pairs} pairs with ≥{MATCH_THRESHOLD} matches")
+    
+    else:
+        # Match only consecutive pairs
+        print(f"[match] Matching consecutive pairs only...")
+        
+        for i in range(num_images - 1):
+            j = i + 1
+            des1 = descriptors_list[i]
+            des2 = descriptors_list[j]
+            
+            # Skip if either image has no features
+            if len(des1) == 0 or len(des2) == 0:
+                print(f"[match] Pair ({i}, {j}): skipped (no features in one or both images)")
+                continue
+            
+            good_matches = match_descriptors(des1, des2)
+            pair_matches[(i, j)] = good_matches
+            print(f"[match] Pair ({i}, {j}): {len(good_matches)} good matches")
+    
     return pair_matches
 
 
@@ -106,11 +196,13 @@ def visualize_matches(images, keypoints_list, pair_matches):
 
 
 def main():
-    # TODO: set this to your folder with room images
-    image_dir = "./images"  # change to your path
+    # Load images from heads/seq-01/ directory
+    image_dir = "./heads/seq-01"
 
     print("[main] Loading images...")
-    image_paths, images = load_images(image_dir)
+    image_paths, images = load_images(image_dir, exts=(".png",), 
+                                      skip_every_n=SKIP_EVERY_N, 
+                                      max_images=MAX_IMAGES)
     print(f"[main] Loaded {len(images)} images")
 
     print("[main] Converting to grayscale...")
@@ -131,16 +223,24 @@ def main():
     
     # Save features and matches for next step
     print("[main] Saving features and matches...")
-    np.savez("./step1_features.npz",
-             image_paths=image_paths,
-             keypoints=[np.array([kp.pt for kp in kps]) for kps in keypoints_list],
-             descriptors=descriptors_list,
-             pair_matches={(i, j): [(m.queryIdx, m.trainIdx, m.distance) 
-                          for m in matches] for (i, j), matches in pair_matches.items()})
+    # Save each component separately to handle different shapes
+    save_dict = {
+        'image_paths': image_paths,
+        'num_images': len(keypoints_list),
+        'pair_matches': {(i, j): [(m.queryIdx, m.trainIdx, m.distance) 
+                         for m in matches] for (i, j), matches in pair_matches.items()}
+    }
+    # Add keypoints and descriptors individually
+    for i, (kps, des) in enumerate(zip(keypoints_list, descriptors_list)):
+        save_dict[f'keypoints_{i}'] = np.array([kp.pt for kp in kps])
+        save_dict[f'descriptors_{i}'] = des
+    
+    np.savez("./step1_features.npz", **save_dict)
     print("[main] Features saved to step1_features.npz")
     
-    print("[main] Visualizing matches...")
-    visualize_matches(images, keypoints_list, pair_matches)
+    # Skip visualization to speed up processing
+    # print("[main] Visualizing matches...")
+    # visualize_matches(images, keypoints_list, pair_matches)
 
     #     # Choose which pair to visualize
     # pair_to_show = (3, 4)  # change this, for example (0, 1) or (3, 4)

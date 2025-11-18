@@ -107,8 +107,11 @@ def compute_dense_disparity(img1_rect, img2_rect, max_disparity=256):
     disparity[disparity < 0] = 0
     
     valid_pixels = np.sum(disparity > 0)
-    print(f"  [Dense] Disparity range: [{disparity[disparity > 0].min():.1f}, {disparity.max():.1f}]")
-    print(f"  [Dense] Valid disparity pixels: {valid_pixels}/{disparity.size} ({valid_pixels/disparity.size*100:.1f}%)")
+    if valid_pixels > 0:
+        print(f"  [Dense] Disparity range: [{disparity[disparity > 0].min():.1f}, {disparity.max():.1f}]")
+        print(f"  [Dense] Valid disparity pixels: {valid_pixels}/{disparity.size} ({valid_pixels/disparity.size*100:.1f}%)")
+    else:
+        print(f"  [Dense] Warning: No valid disparity values found")
     
     return disparity
 
@@ -161,12 +164,14 @@ def disparity_to_point_cloud(disparity, img, Q, roi):
     print(f"  [Dense] Point cloud magnitude range: [{np.linalg.norm(points_3d, axis=1).min():.2f}, {np.linalg.norm(points_3d, axis=1).max():.2f}]")
     
     # More lenient depth filtering
-    # Remove points with negative or very large Z (bad triangulation)
-    z_valid = (points_3d[:, 2] > -100) & (points_3d[:, 2] < 100)
+    # Remove points with negative Z or unreasonably large depth (bad triangulation)
+    # Adjust threshold based on actual scale: sparse reconstruction shows Z up to ~20, but dense can be larger
+    max_depth = 10000  # Very large to keep most points initially
+    z_valid = (points_3d[:, 2] > 0) & (points_3d[:, 2] < max_depth)
     
-    # Remove points that are extremely far from origin (outliers)
+    # Remove extreme outliers based on distance from origin
     distance = np.linalg.norm(points_3d, axis=1)
-    dist_valid = distance < 100
+    dist_valid = distance < 25000  # Very large threshold to keep most points
     
     # Combine filters
     valid = z_valid & dist_valid

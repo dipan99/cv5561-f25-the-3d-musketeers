@@ -26,14 +26,14 @@ def load_seed_pair_data(image_paths, seed_pair):
     print(f"\n[load] Loading Step 1 features...")
     step1_data = np.load("./step1_features.npz", allow_pickle=True)
     
-    keypoints = step1_data['keypoints']
+    num_images = int(step1_data['num_images'])
     pair_matches_raw = step1_data['pair_matches'].item()
     
     idx1, idx2 = seed_pair
     
-    # Get keypoints for seed pair
-    kp1_pts = keypoints[idx1]
-    kp2_pts = keypoints[idx2]
+    # Get keypoints for seed pair (stored separately as keypoints_0, keypoints_1, etc.)
+    kp1_pts = step1_data[f'keypoints_{idx1}']
+    kp2_pts = step1_data[f'keypoints_{idx2}']
     
     # Get matches for seed pair
     matches = [cv2.DMatch(int(q), int(t), float(d)) 

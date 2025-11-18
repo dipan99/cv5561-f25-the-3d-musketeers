@@ -8,5 +8,5 @@
 - **Cheston Opsasnick** — [opsas002@umn.edu](mailto:opsas002@umn.edu)  
   *Lead: Instance Segmentation and Object Lifting*
 
-- **Lulin Liu** — [liu02721@umn.edu](mailto:liu02721@umn.edu)  
+- **Lulin Liu** — [liu02721@umn.edu] (mailto:liu02721@umn.edu)  
   *Lead: Interaction and Evaluation*
