@@ -37,7 +37,17 @@ Thumbs.db
 
 # Images folder (can be large)
 images/
+images2/
 heads/
 
 # Virtual environment
 venv/
+
+rough/
+reconstruction_output/
+
+stanford_extracted/
+
+sfm_dense_pipeline/
+sfm_dense_pipeline_iphone/
+simple_recon/
