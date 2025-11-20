@@ -1,7 +1,7 @@
-.PHONY: all clean features bootstrap pose_triangulation reconstruction incremental visualize dense help run
+.PHONY: all clean features bootstrap pose_triangulation reconstruction incremental visualize dense help run install shell update check run-3dgs run-custom-3dgs
 
 # Python interpreter
-PYTHON := python3
+PYTHON := pipenv run python
 
 # Generated files
 FEATURES := step1_features.npz
@@ -19,7 +19,17 @@ help:
 	@echo "SfM Pipeline Makefile"
 	@echo "====================="
 	@echo ""
-	@echo "Targets:"
+	@echo "Setup:"
+	@echo "  make install      - Install dependencies with Pipenv"
+	@echo "  make shell        - Activate Pipenv shell"
+	@echo "  make update       - Update all dependencies"
+	@echo "  make check        - Check for security vulnerabilities"
+	@echo ""
+	@echo "3DGS Preparation:"
+	@echo "  make run-3dgs     - Run SfM preparation (pycolmap)"
+	@echo "  make run-custom-3dgs - Run custom SfM implementation"
+	@echo ""
+	@echo "Original Pipeline:"
 	@echo "  make run          - Run the complete SfM pipeline"
 	@echo "  make features     - Step 1: Extract features and match"
 	@echo "  make bootstrap    - Step 2: Bootstrap reconstruction"
@@ -31,6 +41,31 @@ help:
 	@echo "  make clean        - Remove all generated files"
 	@echo "  make help         - Show this help message"
 	@echo ""
+
+# Setup commands
+install:
+	@echo "Installing dependencies with Pipenv..."
+	pipenv install
+	@echo "Done! Run 'make shell' to activate the environment."
+
+shell:
+	pipenv shell
+
+update:
+	@echo "Updating dependencies..."
+	pipenv update
+
+check:
+	pipenv check
+
+# 3DGS preparation commands
+run-3dgs:
+	@echo "Running SfM preparation with pycolmap..."
+	$(PYTHON) prepare_for_3dgs.py
+
+run-custom-3dgs:
+	@echo "Running custom SfM implementation..."
+	$(PYTHON) prepare_for_3dgs_own_sfm.py
 
 # Run complete pipeline
 run: dense
@@ -103,9 +138,14 @@ $(DENSE): $(FINAL_POINT_CLOUD)
 # Clean up generated files
 clean:
 	@echo "Cleaning generated files..."
-	@rm -f *.npz *.txt
-	@rm -f *.png *.jpg
-	@rm -f *.txt *.pkl *.ply
+	@rm -f *.npz
+	@rm -f *.pkl *.ply
+	@rm -rf __pycache__
+	@find . -type f -name "*.pyc" -delete
+	@find . -type d -name "__pycache__" -delete
+	@rm -rf sfm_for_3dgs_*
+	@rm -rf reconstruction_output
+	@rm -f database.db
 	@echo "✓ Clean complete"
 
 # Clean and rerun

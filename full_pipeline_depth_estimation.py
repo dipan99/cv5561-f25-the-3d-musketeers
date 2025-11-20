@@ -15,13 +15,13 @@ from pathlib import Path
 import shutil
 import open3d as o3d
 
-USE_STANFORD = False
+USE_STANFORD = True
 
 if USE_STANFORD:
     DATA_DIR = "./stanford_extracted/seq-01"
     OUTPUT_DIR = "./sfm_dense_pipeline_stanford"
     IMAGE_PATTERN = "frame-*.color.png"
-    FRAME_SKIP = 30 
+    FRAME_SKIP = 5 
     MAX_FRAMES = 20 
 else:
     DATA_DIR = "./images2"
