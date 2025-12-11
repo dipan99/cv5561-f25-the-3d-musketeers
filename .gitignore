@@ -4,12 +4,19 @@ __pycache__/
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
 *.egg-info/
 dist/
 build/
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Pipenv
+Pipfile.lock
+
 
 # IDE
 .vscode/
@@ -27,7 +34,7 @@ Thumbs.db
 *.npz
 *.pkl
 *.ply
-*.txt
+# *.txt
 *.png
 *.jpg
 *.jpeg
@@ -37,7 +44,27 @@ Thumbs.db
 
 # Images folder (can be large)
 images/
+images2/
 heads/
 
 # Virtual environment
 venv/
+.venv/
+env/
+ENV/
+
+# Pipenv
+Pipfile.lock
+
+rough/
+reconstruction_output/
+
+stanford_extracted/
+
+sfm_dense_pipeline/
+sfm_dense_pipeline_iphone/
+simple_recon/
+
+sfm_dense_pipeline_stanford/
+
+seq-01/
