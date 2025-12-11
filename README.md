@@ -30,6 +30,10 @@ The notebook includes:
 - 3D Gaussian Splatting training
 - Evaluation and visualization
 
+5. **View your 3D reconstruction**:
+   - Download the generated `point_cloud.ply` file
+   - Upload to [https://antimatter15.com/splat/](https://antimatter15.com/splat/)
+   - Explore your scene interactively in 3D!
 
 ### Pipeline Workflows
 
