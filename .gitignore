@@ -39,6 +39,9 @@ Thumbs.db
 *.jpg
 *.jpeg
 
+!sfm_workflow.jpg
+!3dgs_workflow.jpg
+
 # Keep only source code and README
 !README.md
 
